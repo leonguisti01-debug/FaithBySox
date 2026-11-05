@@ -12,7 +12,7 @@ export default function Home(){
   <section className="campaign" aria-label="For His Glory campaign">
    <img className="campaign-image" src="/campaign-hero.webp" alt="FAITH BY SOX. For His Glory collection campaign, featuring a cream Faith Over Fear T-shirt" />
    <button className="hotspot menu-hotspot" aria-label="Open menu" onClick={()=>setMenu(!menu)}>{menu?<X/>:null}</button>
-   <a className="hotspot cart-hotspot" href="#bag" aria-label={`Shopping bag, ${count} items`}></a>
+   <Link className="hotspot cart-hotspot" href="/checkout" aria-label={`Shopping bag, ${count} items`}></Link>
    <a className="hotspot shop-hotspot" href="#collection" aria-label="Shop the collection"></a>
    {menu&&<nav className="campaign-menu"><button onClick={()=>setMenu(false)} aria-label="Close menu"><X/></button><a href="#collection" onClick={()=>setMenu(false)}>SHOP THE COLLECTION</a><a href="#purpose" onClick={()=>setMenu(false)}>OUR PURPOSE</a><Link href="/admin">ADMIN</Link></nav>}
   </section>
@@ -24,11 +24,11 @@ export default function Home(){
    <div className="gallery-dots" aria-hidden="true"><b/> <i/> <i/> <i/></div>
    <div className="product-header"><span>DISCOVER THE RANGE</span><h2>MADE TO BE <em>WORN.</em><br/>MADE TO <em>MEAN.</em></h2></div>
    <div className="catalog-grid">{products.filter(p=>p.active).map(p=><Link className="catalog-card" key={p.id} href={'/product/'+p.id}><div className="catalog-photo"><img src={p.image|| (p.id==='glory'?'/glory-back.webp':p.id==='forgiven'?'/forgiven-back.webp':'/faith-cream.webp')} alt={p.name}/></div><div className="catalog-name"><b>{p.name}</b><span>R {p.price.toFixed(2)}</span></div><small>{p.verse} · {p.colors.length} COLOURS</small></Link>)}</div>
-   <a className="collection-action" href="#bag">YOUR BAG <ArrowRight size={18}/></a>
+   <Link className="collection-action" href="/checkout">YOUR BAG <ArrowRight size={18}/></Link>
   </section>
-  <section className="editorial-benefits"><div><Truck/><span>NATIONWIDE<br/>DELIVERY</span></div><div><ShieldCheck/><span>SECURE CHECKOUT<br/>COMING SOON</span></div><div><RotateCcw/><span>RETURNS<br/>POLICY PENDING</span></div></section>
+  <section className="editorial-benefits"><div><Truck/><span>NATIONWIDE<br/>DELIVERY</span></div><div><ShieldCheck/><span>YOCO TEST CHECKOUT<br/>NO REAL PAYMENTS</span></div><div><RotateCcw/><span>RETURNS<br/>POLICY PENDING</span></div></section>
   <section id="purpose" className="editorial-purpose"><p>MORE THAN CLOTHING</p><h2>A DECLARATION<br/>OF FAITH.</h2><span className="underline-stroke"/></section>
   <footer className="editorial-footer"><strong>FAITH <span>BY</span> SOX.</strong><p>FOR HIS GLORY · COLLECTION 001</p><small>© 2026 FAITH BY SOX</small></footer>
-  <div id="bag" className="editorial-bag">{count?`${count} ITEM(S) IN YOUR DEMO BAG · CHECKOUT COMING SOON`:'YOUR BAG IS EMPTY · CHECKOUT COMING SOON'}</div>
+  <div id="bag" className="editorial-bag"><Link href="/checkout">{count?`${count} ITEM(S) IN YOUR BAG · TEST CHECKOUT`:'YOUR BAG IS EMPTY · VIEW BAG'}</Link></div>
  </main>
 }
