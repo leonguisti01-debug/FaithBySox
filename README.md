@@ -1,52 +1,26 @@
-# FAITH BY SOX — mobile storefront prototype
+# FAITH BY SOX — Supabase Admin Upgrade
 
-A mobile-first Next.js storefront concept for **FAITH BY SOX**, Collection 001: **FOR HIS GLORY**.
+This update retains the existing editorial storefront styling and adds a Supabase-backed product catalogue, a Supabase Authentication admin login, product image uploads, and product/variant stock management.
 
-## Run locally
+## IMPORTANT: Not yet ready for customer orders
 
-1. Install Node.js 20.9 or later.
-2. In this folder run `npm install`.
-3. Run `npm run dev`.
-4. Open `http://localhost:3000`.
-5. Open `/admin` for the **local demo** product editor.
+Cart is local to the browser. **There is no live checkout, Yoco integration, payment verification, order capture, or stock reservation.** Do not advertise the site as accepting orders yet. The main landing page still contains a static campaign image and static colour-gallery images; the live product catalogue below them comes from Supabase.
 
-## What works in this prototype
+## Installation
 
-- Mobile storefront with the approved black/cream editorial design direction.
-- Product listings and individual product pages.
-- Size and colour selection, optional variant-level stock, demo shopping bag.
-- Admin demo: create, edit and delete products; price, description, colours, sizes, variant stock, visibility and image upload.
-- Product changes and cart saved in **browser localStorage only**.
+1. Run `setup/02-store-setup.sql` in the existing FaithBySox Supabase SQL Editor. This adds three sample products with **zero stock**, their size/colour combinations and a secured image storage bucket. It assumes you already ran the first database setup and granted your user admin membership.
+2. Upload the **contents of this ZIP**, not the enclosing folder, to the root of the existing GitHub repository, replacing existing matching files. GitHub/Vercel should deploy automatically.
+3. In Vercel Production environment variables, keep `NEXT_PUBLIC_SUPABASE_URL` set to your Supabase URL and `NEXT_PUBLIC_SUPABASE_ANON_KEY` set to the **sb_publishable_** key. Do not use `sb_secret_` or service-role keys in any NEXT_PUBLIC variable.
+4. Visit `/admin` and sign in with the email/password for the Supabase Auth user already listed in `store_admins`.
+5. Set correct variant stock and prices, upload photos, and save. The products should appear in the catalogue on the home page.
 
-## IMPORTANT — not production-ready
+## Notes
 
-The admin route has **no authentication** and **must not be published as-is**. Product data is local to each browser, uploads use data URLs with a 1.5 MB demo limit, and the cart has **no checkout, payment, order storage or shipping logic**. The listed prices are placeholders, not confirmed retail prices. Replace illustrative CSS garment artwork with your approved product photography before launch.
-
-## Next production phase
-
-- Supabase Auth (admin-only), Postgres tables for products, variants, stock, orders and order lines, and Supabase Storage for product images.
-- Server-side stock validation and transactional order creation.
-- PayFast hosted checkout with server-side signature validation, IPN notification verification, and idempotent payment reconciliation; never mark an order paid based solely on a browser redirect.
-- Shipping zones/rates, delivery addresses, POPIA/privacy and return policies, order confirmation email.
-- Deploy on Vercel and connect faithbysox.co.za after confirming registration.
-
-## Design
-
-Single-column mobile-focused presentation with a 490px max-width desktop preview. Uses DM Sans and Playfair Display from Google Fonts (requires internet). All artwork is illustrative until approved photographs are supplied.
-
-
-## V2 — approved campaign rebuild
-
-This update uses a sliced, optimized image from the approved campaign mockup for a pixel-faithful mobile hero. Clickable menu, shopping-bag anchor and Shop the Collection are positioned as transparent hotspots over the art. The collection, product pages and admin remain interactive. The campaign hero is a composited image (not independently editable text); replace it with separate licensed photography and type layers when final campaign assets are ready.
-
-### Replace V1 in GitHub
-
-Upload the **contents** of this folder to the root of the existing `leonguisti01-debug/FaithBySox` repository (overwrite existing files, add `public/` assets). Vercel will build automatically on the `main` branch. The website remains a prototype: localStorage admin is NOT secure and Yoco checkout is NOT implemented. Do not accept orders yet.
-
-### Connect www.faithbysox.co.za
-
-Vercel project → Settings → Domains → add `www.faithbysox.co.za` and `faithbysox.co.za`; set www as primary and redirect the apex to www. In Mweb DNS set the `www` CNAME to the exact value displayed by Vercel, and configure apex A/ALIAS as instructed by Vercel. Preserve existing MX/TXT email records. Wait for Vercel verification and HTTPS. Do not cancel Mweb hosting before confirming any email and DNS dependencies.
-
-### Security / launch
-
-Replace localStorage admin with Supabase Auth and row-level-security-protected product/stock/order tables, store images in Supabase Storage, and integrate Yoco Checkout API using server-side keys, verified webhooks and stock reservation. Never upload secrets to public GitHub. Use a commercial-appropriate Vercel plan before taking live orders.
+- The SQL in `setup/02-store-setup.sql` must be run manually once. The app will not create database tables by itself.
+- Existing data is not overwritten by the seed SQL.
+- Only admins have write permissions in Supabase RLS. Public users can read active products and their variants.
+- Product image uploads are limited to 5 MB and JPEG/PNG/WebP.
+- The hero/campaign and four colour gallery images remain deliberately unchanged to preserve the approved design.
+- Do not commit `.env` files or secret API keys to GitHub.
+- Test the admin login and product saving before changing any product to active.
+- The site is a commercial project; verify that your Vercel plan permits commercial use before launch.

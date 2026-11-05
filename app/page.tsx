@@ -2,11 +2,11 @@
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {Menu,X,ShoppingBag,Truck,ShieldCheck,RotateCcw,ArrowRight} from 'lucide-react';
-import {Product,defaults,getProducts,getCart,colorHex} from '../lib/store';
+import {Product,defaults,loadProducts,getCart,colorHex} from '../lib/store';
 const images=['/faith-black.webp','/faith-white.webp','/faith-cream.webp','/faith-brown.webp'];
 export default function Home(){
- const [products,setProducts]=useState<Product[]>(defaults),[count,setCount]=useState(0),[menu,setMenu]=useState(false);
- useEffect(()=>{const sync=()=>{setProducts(getProducts());setCount(getCart().reduce((s,i)=>s+i.qty,0))};sync();window.addEventListener('fbs-update',sync);return()=>window.removeEventListener('fbs-update',sync)},[]);
+ const [products,setProducts]=useState<Product[]>([]),[count,setCount]=useState(0),[menu,setMenu]=useState(false);
+ useEffect(()=>{const sync=()=>{loadProducts().then(setProducts).catch(console.error);setCount(getCart().reduce((s,i)=>s+i.qty,0))};sync();window.addEventListener('fbs-update',sync);return()=>window.removeEventListener('fbs-update',sync)},[]);
  const featured=products.find(p=>p.id==='faith-over-fear')||products[0];
  return <main className="shell editorial">
   <section className="campaign" aria-label="For His Glory campaign">
@@ -14,7 +14,7 @@ export default function Home(){
    <button className="hotspot menu-hotspot" aria-label="Open menu" onClick={()=>setMenu(!menu)}>{menu?<X/>:null}</button>
    <a className="hotspot cart-hotspot" href="#bag" aria-label={`Shopping bag, ${count} items`}></a>
    <a className="hotspot shop-hotspot" href="#collection" aria-label="Shop the collection"></a>
-   {menu&&<nav className="campaign-menu"><button onClick={()=>setMenu(false)} aria-label="Close menu"><X/></button><a href="#collection" onClick={()=>setMenu(false)}>SHOP THE COLLECTION</a><a href="#purpose" onClick={()=>setMenu(false)}>OUR PURPOSE</a><Link href="/admin">ADMIN DEMO</Link></nav>}
+   {menu&&<nav className="campaign-menu"><button onClick={()=>setMenu(false)} aria-label="Close menu"><X/></button><a href="#collection" onClick={()=>setMenu(false)}>SHOP THE COLLECTION</a><a href="#purpose" onClick={()=>setMenu(false)}>OUR PURPOSE</a><Link href="/admin">ADMIN</Link></nav>}
   </section>
   <section id="collection" className="editorial-collection">
    <div className="rough-top" aria-hidden="true"/>
