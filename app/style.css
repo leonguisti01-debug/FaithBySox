@@ -66,3 +66,14 @@
 /* Keep the open navigation above the hero artwork; preserve all existing visuals. */
 .approved-header.menu-open{overflow:visible;z-index:30}
 .approved-header.menu-open .exact-menu{top:0;right:0;bottom:auto;left:0;height:auto;min-height:340px}
+
+/* Collection 001: reference-matched mobile campaign with interactive links. */
+.campaign-front{position:relative;line-height:0;background:#080808}.campaign-front>img{display:block;width:100%;height:auto}
+.campaign-menu-hit,.campaign-cart-hit,.campaign-shop-hit{position:absolute;display:block;background:transparent;border:0;cursor:pointer;z-index:3}
+.campaign-menu-hit{top:0;left:0;width:17%;height:12%}.campaign-cart-hit{top:0;right:0;width:20%;height:12%}.campaign-shop-hit{top:76%;right:2%;width:47%;height:15%}
+.campaign-nav{position:absolute;top:0;left:0;right:0;min-height:350px;background:#0d0d0d;color:#fff;z-index:10;display:flex;flex-direction:column;gap:24px;padding:24px;font-size:14px;font-weight:800;letter-spacing:2px;line-height:1.5}.campaign-nav button{align-self:flex-end;background:transparent;border:0;color:white}
+.reference-collection{background:#f8f4ed;padding:22px 10px 16px}.reference-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:clamp(16px,4.4vw,32px);font-weight:800;letter-spacing:clamp(3px,1.2vw,10px);white-space:nowrap;margin:8px 0 30px}.reference-heading span{height:1px;background:#171717;flex:1}
+.reference-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.reference-gallery a{display:block;min-width:0}.reference-gallery img{width:100%;height:auto;display:block;filter:drop-shadow(0 7px 7px #0004)}
+.reference-dots{display:flex;justify-content:center;gap:13px;margin:22px 0 4px}.reference-dots b,.reference-dots i{height:9px;width:9px;background:#c9c4bd;border-radius:50%;display:block}.reference-dots b{background:#111}
+.reference-purpose{background:#f8f4ed;text-align:center;padding:45px 10px 42px;position:relative}.reference-purpose p{font-size:clamp(10px,2.5vw,17px);letter-spacing:6px;margin:0 0 14px}.reference-purpose h2{font-size:clamp(24px,5.2vw,48px);line-height:1.15;margin:0 0 18px;letter-spacing:1px;font-weight:800}.reference-purpose span{display:block;background:#111;width:120px;height:3px;transform:rotate(-4deg);margin:auto}
+@media(min-width:942px){.reference-heading{font-size:32px}.reference-purpose h2{font-size:48px}}

@@ -28,8 +28,9 @@ export async function POST(request:Request){
   }
   const subtotal=prepared.reduce((s,x)=>s+x.unit_price_cents*x.quantity,0);
   if(!Number.isSafeInteger(subtotal)||subtotal<200)return NextResponse.json({error:'Invalid order amount.'},{status:400});
-  // Fixed nationwide delivery charge, including during sandbox testing.
-  const shipping=12000;
+  // Temporarily waive shipping for low-cost live payment verification.
+  // Restore the standard charge before selling normally.
+  const shipping=0;
   const total=subtotal+shipping;
   const orderId=crypto.randomUUID();
   const {error:orderError}=await db.from('orders').insert({id:orderId,customer_name:name,customer_email:email,customer_phone:phone,delivery_address:{address},subtotal_cents:subtotal,shipping_cents:shipping,total_cents:total,payment_status:'pending',fulfilment_status:'unfulfilled',payment_reference:null,payment_mode:mode});

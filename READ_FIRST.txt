@@ -1,0 +1,8 @@
+FAITH BY SOX COLLECTION 001
+Homepage matches supplied campaign artwork.
+Admin: /admin — add/edit products and upload images through Supabase.
+Live Yoco checkout remains configured through Vercel environment variables.
+Email sending removed from webhook processing.
+Delivery R0 in browser and server; restore a delivery fee before normal nationwide sales if needed.
+IMPORTANT: Yoco webhook payment confirmation has NOT been live-verified. Check Yoco for payment approval before dispatching.
+To restore a deleted Vercel project, re-import project and configure Supabase and Yoco credentials. No credentials are in this ZIP.

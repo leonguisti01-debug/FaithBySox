@@ -2,8 +2,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { database } from '../../../lib/server';
-import { sendPaidOrderConfirmation } from '../../../lib/order-email';
-import { sendAdminOrderNotification } from '../../../lib/admin-order-email';
 
 export const runtime = 'nodejs';
 
@@ -150,8 +148,6 @@ export async function POST(request: Request) {
     // can reject legitimate paid orders and prevent their fulfilment.
 
     if (order.payment_status === 'paid') {
-      await sendPaidOrderConfirmation(orderId);
-      await sendAdminOrderNotification(orderId);
       return NextResponse.json({ ok: true });
     }
 
@@ -172,8 +168,6 @@ export async function POST(request: Request) {
 
     // Print on demand: no stock decrement or automatic fulfilment.
     if (status === 'paid') {
-      await sendPaidOrderConfirmation(orderId);
-      await sendAdminOrderNotification(orderId);
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
