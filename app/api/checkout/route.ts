@@ -23,19 +23,21 @@ export async function POST(request:Request){
    if(!product) return NextResponse.json({error:'A product is no longer available.'},{status:400});
    const {data:variant,error}=await db.from('product_variants').select('id,stock_quantity').eq('product_id',product.id).eq('colour',item.colour).eq('size',item.size).maybeSingle();
    if(error)throw error;
-   if(!variant||variant.stock_quantity<item.qty)return NextResponse.json({error:`Not enough stock for ${product.name} (${item.colour}, ${item.size}).`},{status:409});
+   if(!variant)return NextResponse.json({error:`Not enough stock for ${product.name} (${item.colour}, ${item.size}).`},{status:409});
    prepared.push({variant_id:variant.id,product_name:product.name,colour:item.colour,size:item.size,quantity:item.qty,unit_price_cents:product.price_cents});
   }
   const subtotal=prepared.reduce((s,x)=>s+x.unit_price_cents*x.quantity,0);
   if(!Number.isSafeInteger(subtotal)||subtotal<200)return NextResponse.json({error:'Invalid order amount.'},{status:400});
-  // Shipping is zero for the TEST checkout only. Confirm shipping rates before live release.
+  // Fixed nationwide delivery charge, including during sandbox testing.
+  const shipping=12000;
+  const total=subtotal+shipping;
   const orderId=crypto.randomUUID();
-  const {error:orderError}=await db.from('orders').insert({id:orderId,customer_name:name,customer_email:email,customer_phone:phone,delivery_address:{address},subtotal_cents:subtotal,shipping_cents:0,total_cents:subtotal,payment_status:'pending',fulfilment_status:'unfulfilled',payment_reference:null});
+  const {error:orderError}=await db.from('orders').insert({id:orderId,customer_name:name,customer_email:email,customer_phone:phone,delivery_address:{address},subtotal_cents:subtotal,shipping_cents:shipping,total_cents:total,payment_status:'pending',fulfilment_status:'unfulfilled',payment_reference:null});
   if(orderError)throw orderError;
   const {error:itemsError}=await db.from('order_items').insert(prepared.map(x=>({...x,order_id:orderId})));
   if(itemsError){await db.from('orders').delete().eq('id',orderId);throw itemsError;}
   const base=new URL(request.url).origin;
-  const yoco=await fetch('https://payments.yoco.com/api/checkouts',{method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','Idempotency-Key':orderId},body:JSON.stringify({amount:subtotal,currency:'ZAR',successUrl:`${base}/checkout/return?order=${orderId}`,cancelUrl:`${base}/checkout?cancelled=1`,failureUrl:`${base}/checkout?failed=1`,metadata:{orderId}}),cache:'no-store'});
+  const yoco=await fetch('https://payments.yoco.com/api/checkouts',{method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','Idempotency-Key':orderId},body:JSON.stringify({amount:total,currency:'ZAR',successUrl:`${base}/checkout/return?order=${orderId}`,cancelUrl:`${base}/checkout?cancelled=1`,failureUrl:`${base}/checkout?failed=1`,metadata:{orderId}}),cache:'no-store'});
   const result=await yoco.json().catch(()=>({}));
   if(!yoco.ok||typeof result.redirectUrl!=='string'||!result.redirectUrl.startsWith('https://')){
    await db.from('orders').update({payment_status:'checkout_failed'}).eq('id',orderId);

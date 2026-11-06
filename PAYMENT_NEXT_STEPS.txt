@@ -1,0 +1,7 @@
+FAITH BY SOX — PAYMENT WORK IN PROGRESS
+
+This package preserves the approved homepage artwork and adds R120 fixed nationwide shipping to both the checkout display and server-calculated Yoco test payment amount.
+
+IMPORTANT: Still TEST ONLY. Do not replace the Yoco test key with a live key. The current server deliberately blocks live credentials.
+
+Before live launch: implement and test atomic stock deduction/idempotency, separate live webhook registration and signing secret, live-mode payment verification, order confirmation and fulfilment processes, and a real low-value payment/refund test. Rotate previously exposed test credentials.
