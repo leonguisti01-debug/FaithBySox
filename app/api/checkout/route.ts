@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server';
-import {database,testKey} from '../../../lib/server';
+import {database,checkoutCredentials} from '../../../lib/server';
 export const runtime='nodejs';
 export async function POST(request:Request){
  try{
@@ -14,7 +14,7 @@ export async function POST(request:Request){
   if(items.some((x:any)=>!x.slug||!x.colour||!x.size||!Number.isInteger(x.qty)||x.qty<1||x.qty>10))return NextResponse.json({error:'Invalid bag items.'},{status:400});
   const unique=new Set(items.map((x:any)=>`${x.slug}|${x.colour}|${x.size}`));
   if(unique.size!==items.length)return NextResponse.json({error:'Please refresh your bag and try again.'},{status:400});
-  const db=database();const key=testKey();
+  const db=database();const {key,mode}=checkoutCredentials();
   const {data:products,error:productError}=await db.from('products').select('id,slug,name,price_cents,active').in('slug',items.map((x:any)=>x.slug));
   if(productError)throw productError;
   const prepared=[] as Array<{variant_id:string;product_name:string;colour:string;size:string;quantity:number;unit_price_cents:number}>;
@@ -32,19 +32,20 @@ export async function POST(request:Request){
   const shipping=12000;
   const total=subtotal+shipping;
   const orderId=crypto.randomUUID();
-  const {error:orderError}=await db.from('orders').insert({id:orderId,customer_name:name,customer_email:email,customer_phone:phone,delivery_address:{address},subtotal_cents:subtotal,shipping_cents:shipping,total_cents:total,payment_status:'pending',fulfilment_status:'unfulfilled',payment_reference:null});
+  const {error:orderError}=await db.from('orders').insert({id:orderId,customer_name:name,customer_email:email,customer_phone:phone,delivery_address:{address},subtotal_cents:subtotal,shipping_cents:shipping,total_cents:total,payment_status:'pending',fulfilment_status:'unfulfilled',payment_reference:null,payment_mode:mode});
   if(orderError)throw orderError;
   const {error:itemsError}=await db.from('order_items').insert(prepared.map(x=>({...x,order_id:orderId})));
   if(itemsError){await db.from('orders').delete().eq('id',orderId);throw itemsError;}
-  const base=new URL(request.url).origin;
+  const base='https://www.faithbysox.co.za';
   const yoco=await fetch('https://payments.yoco.com/api/checkouts',{method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','Idempotency-Key':orderId},body:JSON.stringify({amount:total,currency:'ZAR',successUrl:`${base}/checkout/return?order=${orderId}`,cancelUrl:`${base}/checkout?cancelled=1`,failureUrl:`${base}/checkout?failed=1`,metadata:{orderId}}),cache:'no-store'});
   const result=await yoco.json().catch(()=>({}));
-  if(!yoco.ok||typeof result.redirectUrl!=='string'||!result.redirectUrl.startsWith('https://')){
+  if(!yoco.ok||typeof result.redirectUrl!=='string'||!result.redirectUrl.startsWith('https://')||typeof result.id!=='string'||!/^ch_[a-zA-Z0-9_-]+$/.test(result.id)){
    await db.from('orders').update({payment_status:'checkout_failed'}).eq('id',orderId);
-   return NextResponse.json({error:'Yoco could not start the test payment. Please try again.'},{status:502});
+   return NextResponse.json({error:'Yoco could not start payment. Please try again.'},{status:502});
   }
-  const reference=String(result.id||'');
-  if(reference)await db.from('orders').update({payment_reference:reference}).eq('id',orderId);
+  const reference=result.id;
+  const {error:referenceError}=await db.from('orders').update({payment_reference:reference}).eq('id',orderId);
+  if(referenceError)throw referenceError;
   return NextResponse.json({redirectUrl:result.redirectUrl});
- }catch(error){console.error('Test checkout error',error);return NextResponse.json({error:'Checkout is not configured or temporarily unavailable.'},{status:503});}
+ }catch(error){console.error('Checkout error',error);return NextResponse.json({error:'Checkout is not configured or temporarily unavailable.'},{status:503});}
 }
