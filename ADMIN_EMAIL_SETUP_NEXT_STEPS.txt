@@ -1,0 +1,11 @@
+FAITH BY SOX — Admin paid order notifications (test mode)
+
+1. Run setup/05-admin-order-notification.sql in Supabase SQL Editor.
+2. Upload all contents of FaithBySox-main to the existing GitHub repository (preserve paths), commit, and wait for Vercel Ready.
+3. Keep Yoco TEST keys unchanged.
+4. Make ONE new Yoco test purchase using a customer email address you can check.
+5. Verify the customer confirmation goes to the customer AND a separate NEW PAID ORDER email arrives at orders@faithbysox.co.za.
+6. If admin notification fails, check Vercel logs for 'Admin order notification'.
+
+No homepage, product, styling, or customer confirmation code was changed.
+Existing historical paid test orders are not automatically emailed by this deployment; only new webhook deliveries trigger sends.
