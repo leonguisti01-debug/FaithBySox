@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const secrets = [
       { mode: 'test', value: process.env.YOCO_WEBHOOK_SECRET },
       { mode: 'live', value: process.env.YOCO_LIVE_WEBHOOK_SECRET }
-    ].filter((s): s is {mode: string; value: string} => Boolean(s.value?.startsWith('whsec_')));
+    ].filter((s): s is {mode: string; value: string} => Boolean(s.value?.trim().startsWith('whsec_')));
     if (!secrets.length) {
       return NextResponse.json(
         { error: 'Webhook not configured' },
@@ -40,20 +40,28 @@ export async function POST(request: Request) {
     const raw = await request.text();
     let verifiedMode: string | null = null;
     for (const secret of secrets) {
-      const key = Buffer.from(secret.value.slice(6), 'base64');
+      const key = Buffer.from(secret.value.trim().slice(6), 'base64');
       const expected = createHmac('sha256', key)
         .update(`${id}.${stamp}.${raw}`)
         .digest();
-      const valid = signature.split(' ').some((entry) => {
-        const parts = entry.split(',');
-        if (parts.length !== 2 || parts[0] !== 'v1') return false;
-        const candidate = Buffer.from(parts[1], 'base64');
+      // Svix signs the exact raw request body. Accept multiple v1 signatures,
+      // including comma/whitespace-separated entries during key rotation.
+      const candidates = [...signature.matchAll(/(?:^|[\s,])v1,([A-Za-z0-9+/_=-]+)/g)];
+      const valid = candidates.some((match) => {
+        const candidate = Buffer.from(match[1], 'base64url');
         return candidate.length === expected.length && timingSafeEqual(candidate, expected);
       });
       if (valid) { verifiedMode = secret.mode; break; }
     }
     if (!verifiedMode) {
-      console.warn('Yoco webhook signature invalid');
+      console.warn('Yoco webhook signature invalid', {
+        configuredModes: secrets.map(s => s.mode),
+        hasWebhookId: Boolean(id),
+        hasWebhookTimestamp: Boolean(stamp),
+        hasWebhookSignature: Boolean(signature),
+        signatureVersions: [...signature.matchAll(/(?:^|[\s,])v([0-9]+),/g)].map(m => m[1]),
+        // No secrets, signatures, or customer details are logged.
+      });
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
