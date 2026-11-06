@@ -21,7 +21,7 @@ export default function Home(){
  const featured=products.find(p=>p.id==='faith-over-fear')||products[0];
  const chooseRange=(name:string)=>{setRange(name);document.getElementById('shop-products')?.scrollIntoView({behavior:'smooth'});};
  return <main className="shell exact-mobile">
-  <header className="approved-panel approved-header">
+  <header className={`approved-panel approved-header${menu ? " menu-open" : ""}`}>
    <img src="/approved-header.webp" alt="FAITH BY SOX original logo and navigation"/>
    <button className="hit header-menu-hit" aria-label="Open navigation" onClick={()=>setMenu(true)}/>
    <Link className="hit header-bag-hit" href="/checkout" aria-label={`Shopping bag, ${count} items`}/>

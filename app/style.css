@@ -62,3 +62,7 @@
 .exact-footer{background:#101010;color:#f4efe8;text-align:center;padding:32px 18px;display:flex;flex-direction:column;gap:12px;align-items:center}
 .exact-footer strong{font-size:23px}.exact-footer strong span{font-weight:400}.exact-footer p{font-size:10px;letter-spacing:2px}.exact-footer a{border:1px solid #e7ddd0;padding:12px 20px;font-size:11px;font-weight:800}
 @media(min-width:942px){.exact-mobile{box-shadow:0 12px 80px #0008}}
+
+/* Keep the open navigation above the hero artwork; preserve all existing visuals. */
+.approved-header.menu-open{overflow:visible;z-index:30}
+.approved-header.menu-open .exact-menu{top:0;right:0;bottom:auto;left:0;height:auto;min-height:340px}
