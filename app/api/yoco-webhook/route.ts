@@ -95,19 +95,29 @@ export async function POST(request: Request) {
       );
     }
 
+    // Yoco signs payment.succeeded events; its status field may be absent or
+    // use the provider's "successful" spelling rather than "succeeded".
+    // Keep amount, currency, order and signing-environment checks mandatory.
     const amount = payload.amount;
     const currency = String(payload.currency || '').toUpperCase();
     const eventMode = String(payload.mode || payload.processingMode || '').toLowerCase();
     const paymentStatus = String(payload.status || '').toLowerCase();
-
-    // The signing secret establishes the trusted environment; the optional
-    // payload mode must not contradict it. Some Yoco events omit mode.
-    if (order.payment_mode !== verifiedMode ||
-        (eventMode && eventMode !== verifiedMode) ||
-        !Number.isSafeInteger(amount) || amount !== order.total_cents ||
-        currency !== 'ZAR' ||
-        (paymentStatus && paymentStatus !== ('succeeded'))) {
-      console.warn('Yoco payment amount, currency, status or mode mismatch', { orderId });
+    const normalizedEventMode = eventMode === 'production' ? 'live' :
+      eventMode === 'sandbox' ? 'test' : eventMode;
+    const validStatus = !paymentStatus ||
+      ['succeeded', 'successful', 'success', 'approved', 'completed', 'paid'].includes(paymentStatus);
+    const checks = {
+      orderModeMatchesSignature: order.payment_mode === verifiedMode,
+      eventModeMatchesSignature: !normalizedEventMode || normalizedEventMode === verifiedMode,
+      amountMatches: Number.isSafeInteger(amount) && amount === order.total_cents,
+      currencyMatches: currency === 'ZAR',
+      statusMatches: validStatus
+    };
+    if (Object.values(checks).some(ok => !ok)) {
+      console.warn('Yoco payment verification mismatch', { orderId, checks,
+        receivedStatus: paymentStatus, receivedMode: eventMode,
+        receivedCurrency: currency, receivedAmount: amount,
+        expectedAmount: order.total_cents });
       return NextResponse.json({ error: 'Payment mismatch' }, { status: 400 });
     }
 
