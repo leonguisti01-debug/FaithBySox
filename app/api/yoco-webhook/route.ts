@@ -2,6 +2,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { database, testKey } from '../../../lib/server';
+import { sendPaidOrderConfirmation } from '../../../lib/order-email';
 
 export const runtime = 'nodejs';
 
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
     }
 
     if (order.payment_status === 'paid') {
+      await sendPaidOrderConfirmation(orderId);
       return NextResponse.json({ ok: true });
     }
 
@@ -157,6 +159,7 @@ export async function POST(request: Request) {
     });
 
     // TEST ONLY: No stock decrement or fulfilment.
+    if (status === 'paid') await sendPaidOrderConfirmation(orderId);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Webhook error', error);

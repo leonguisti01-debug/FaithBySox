@@ -3,5 +3,5 @@ TEST MODE PACKAGE — NOT LIVE PAYMENT READY
 2. Run setup/03-print-on-demand-price.sql in Supabase SQL Editor to update actual database prices.
 3. Test size selection, a R395 shirt + R120 shipping = R515 test payment, and paid-order dashboard.
 4. Live Yoco checkout and webhook need a separately verified implementation, live webhook registration and end-to-end test before real payments.
-5. Customer confirmation email from orders@faithbysox.co.za requires a configured sending service and verified domain; NOT enabled in this package.
+5. Customer confirmation email integration included. Run setup/04-order-confirmation.sql, configure RESEND_API_KEY, then test a successful Yoco test payment and receipt.
 6. Do not accept real money with this test-only package.

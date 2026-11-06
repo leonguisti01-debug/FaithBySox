@@ -1,0 +1,12 @@
+FAITH BY SOX — AUTOMATIC CUSTOMER ORDER CONFIRMATION (TEST MODE)
+
+1. In Supabase SQL Editor, run setup/04-order-confirmation.sql ONCE.
+2. In Vercel > faithbysox > Settings > Environment Variables, add RESEND_API_KEY for Production. Never put the key in source files or share it.
+3. Deploy this entire ZIP to GitHub / Vercel. Keep the existing TEST Yoco credentials.
+4. Make a new successful Yoco TEST payment with an email inbox you control. Confirm the paid order appears in Admin > Orders and exactly one customer confirmation arrives.
+5. Check the Supabase orders row: confirmation_email_status should be 'sent'. If not, check Vercel function logs and Resend email logs.
+6. Do not use real Yoco keys with this package. Checkout and webhook are intentionally test-only. Live payments require separate checkout/payment verification and live webhook work.
+
+IMPORTANT: The MWEB mailbox continues to receive normal emails. Resend sends automatic confirmations. The confirmed R395 shirt price and R120 delivery fee are unchanged. No homepage, logo, style, cart, or product image changes.
+
+Retry note: A failed send may retry on a later Yoco webhook delivery after ten minutes. Resend's idempotency key helps avoid duplicates but is time-limited; check Resend logs before manual retries.
