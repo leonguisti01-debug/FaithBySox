@@ -1,0 +1,9 @@
+FAITH BY SOX — PAYMENT STATUS
+
+This build remains TEST CHECKOUT ONLY. It accepts the separate YOCO_LIVE_WEBHOOK_SECRET for signature verification but deliberately rejects live events and never marks live orders paid.
+
+Why: The uploaded checkout route uses testKey() and the webhook checks mode=test. Production requires secure payment-to-checkout binding, live key and webhook verification, reconciliation, and a real end-to-end live payment test. Do not swap a live key into YOCO_SECRET_KEY in this build.
+
+Existing test webhook stays functional. Customer confirmation emails remain enabled on paid test orders; admin notification emails have been disabled, as requested.
+
+No website design, logo, product, or homepage files were modified.

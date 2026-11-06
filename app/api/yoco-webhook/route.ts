@@ -3,7 +3,6 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { database, testKey } from '../../../lib/server';
 import { sendPaidOrderConfirmation } from '../../../lib/order-email';
-import { sendAdminOrderNotification } from '../../../lib/admin-order-email';
 
 export const runtime = 'nodejs';
 
@@ -11,8 +10,10 @@ export async function POST(request: Request) {
   try {
     testKey();
 
-    const secret = process.env.YOCO_WEBHOOK_SECRET;
-    if (!secret?.startsWith('whsec_')) {
+    const secrets = [process.env.YOCO_WEBHOOK_SECRET, process.env.YOCO_LIVE_WEBHOOK_SECRET].filter(
+      (value): value is string => Boolean(value?.startsWith('whsec_'))
+    );
+    if (!secrets.length) {
       return NextResponse.json(
         { error: 'Webhook not configured' },
         { status: 503 }
@@ -37,22 +38,19 @@ export async function POST(request: Request) {
     }
 
     const raw = await request.text();
-    const key = Buffer.from(secret.slice(6), 'base64');
-
-    const expected = createHmac('sha256', key)
-      .update(`${id}.${stamp}.${raw}`)
-      .digest();
-
-    const valid = signature.split(' ').some((entry) => {
-      const parts = entry.split(',');
-      if (parts.length !== 2 || parts[0] !== 'v1') return false;
-
-      const candidate = Buffer.from(parts[1], 'base64');
-      return (
-        candidate.length === expected.length &&
-        timingSafeEqual(candidate, expected)
-      );
+    const matchedSecret = secrets.find((secret) => {
+      const key = Buffer.from(secret.slice(6), 'base64');
+      const expected = createHmac('sha256', key)
+        .update(`${id}.${stamp}.${raw}`)
+        .digest();
+      return signature.split(' ').some((entry) => {
+        const parts = entry.split(',');
+        if (parts.length !== 2 || parts[0] !== 'v1') return false;
+        const candidate = Buffer.from(parts[1], 'base64');
+        return candidate.length === expected.length && timingSafeEqual(candidate, expected);
+      });
     });
+    const valid = Boolean(matchedSecret);
 
     if (!valid) {
       console.warn('Yoco webhook signature invalid');
@@ -63,6 +61,13 @@ export async function POST(request: Request) {
     }
 
     const event = JSON.parse(raw);
+    // The checkout route is still test-only. Never mark a live payment paid
+    // until the live checkout and payment-to-checkout verification are implemented.
+    if (matchedSecret === process.env.YOCO_LIVE_WEBHOOK_SECRET &&
+        matchedSecret !== process.env.YOCO_WEBHOOK_SECRET) {
+      console.warn('Live Yoco event received while live checkout is disabled');
+      return NextResponse.json({ error: 'Live checkout not enabled' }, { status: 503 });
+    }
 
     if (
       event.type !== 'payment.succeeded' &&
@@ -105,7 +110,6 @@ export async function POST(request: Request) {
 
     if (order.payment_status === 'paid') {
       await sendPaidOrderConfirmation(orderId);
-      await sendAdminOrderNotification(orderId);
       return NextResponse.json({ ok: true });
     }
 
@@ -163,7 +167,6 @@ export async function POST(request: Request) {
     // TEST ONLY: No stock decrement or fulfilment.
     if (status === 'paid') {
       await sendPaidOrderConfirmation(orderId);
-      await sendAdminOrderNotification(orderId);
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
