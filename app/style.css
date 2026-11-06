@@ -40,7 +40,7 @@
 .approved-panel>img{display:block;width:100%;height:auto}
 .approved-panel .hit{position:absolute;display:block;background:transparent;border:0;padding:0;z-index:2;cursor:pointer}
 .header-menu-hit{left:2%;top:6%;width:13%;height:88%}
-.header-bag-hit{right:2%;top:5%;width:14%;height:90%}
+.header-bag-hit{right:0;top:0;width:22%;height:100%}
 .hero-cta-hit{left:28%;top:78%;width:44%;height:15%}
 .range-breeze-hit{left:2.5%;top:25%;width:33%;height:69%}
 .range-faith-hit{left:36.5%;top:25%;width:33%;height:69%}
