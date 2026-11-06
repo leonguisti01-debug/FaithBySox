@@ -77,3 +77,12 @@
 .reference-dots{display:flex;justify-content:center;gap:13px;margin:22px 0 4px}.reference-dots b,.reference-dots i{height:9px;width:9px;background:#c9c4bd;border-radius:50%;display:block}.reference-dots b{background:#111}
 .reference-purpose{background:#f8f4ed;text-align:center;padding:45px 10px 42px;position:relative}.reference-purpose p{font-size:clamp(10px,2.5vw,17px);letter-spacing:6px;margin:0 0 14px}.reference-purpose h2{font-size:clamp(24px,5.2vw,48px);line-height:1.15;margin:0 0 18px;letter-spacing:1px;font-weight:800}.reference-purpose span{display:block;background:#111;width:120px;height:3px;transform:rotate(-4deg);margin:auto}
 @media(min-width:942px){.reference-heading{font-size:32px}.reference-purpose h2{font-size:48px}}
+
+/* Product images: preserve every edge of uploaded artwork at any screen width. */
+.exact-product img{width:100%;height:auto;aspect-ratio:auto;object-fit:contain;object-position:center;display:block;background:#f8f4ed}
+.detail-art{height:auto;min-height:0;overflow:visible}
+.detail-art img{width:100%;height:auto;max-height:none;object-fit:contain;display:block}
+.catalog-photo{aspect-ratio:auto;overflow:visible}
+.catalog-photo img{width:100%;height:auto;object-fit:contain;display:block}
+.product-art{height:auto;overflow:visible}
+.product-art img{width:100%;height:auto;object-fit:contain;display:block}
