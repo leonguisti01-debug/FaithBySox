@@ -23,7 +23,7 @@ export async function POST(request:Request){
    if(!product) return NextResponse.json({error:'A product is no longer available.'},{status:400});
    const {data:variant,error}=await db.from('product_variants').select('id,stock_quantity').eq('product_id',product.id).eq('colour',item.colour).eq('size',item.size).maybeSingle();
    if(error)throw error;
-   if(!variant)return NextResponse.json({error:`Not enough stock for ${product.name} (${item.colour}, ${item.size}).`},{status:409});
+   if(!variant)return NextResponse.json({error:`Variant unavailable for ${product.name} (${item.colour}, ${item.size}).`},{status:409});
    prepared.push({variant_id:variant.id,product_name:product.name,colour:item.colour,size:item.size,quantity:item.qty,unit_price_cents:product.price_cents});
   }
   const subtotal=prepared.reduce((s,x)=>s+x.unit_price_cents*x.quantity,0);
