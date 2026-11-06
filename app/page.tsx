@@ -3,35 +3,23 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {Menu,X,ShoppingBag,Truck,ShieldCheck,ArrowRight} from 'lucide-react';
 import {Product,loadProducts,getCart} from '../lib/store';
-
-const canonicalRange=(name:string)=>name==='FOR HIS GLORY'?'Faith':(name||'Faith').trim();
+const images=['/faith-black.webp','/faith-white.webp','/faith-cream.webp','/faith-brown.webp'];
 export default function Home(){
- const [products,setProducts]=useState<Product[]>([]);
- const [count,setCount]=useState(0);
- const [menu,setMenu]=useState(false);
- const [selectedRange,setSelectedRange]=useState<string|null>(null);
- useEffect(()=>{const sync=()=>{loadProducts().then(setProducts).catch(console.error);setCount(getCart().reduce((sum,line)=>sum+line.qty,0))};sync();window.addEventListener('fbs-update',sync);return()=>window.removeEventListener('fbs-update',sync)},[]);
+ const [products,setProducts]=useState<Product[]>([]),[count,setCount]=useState(0),[menu,setMenu]=useState(false);
+ useEffect(()=>{const sync=()=>{loadProducts().then(setProducts).catch(console.error);setCount(getCart().reduce((s,i)=>s+i.qty,0))};sync();window.addEventListener('fbs-update',sync);return()=>window.removeEventListener('fbs-update',sync)},[]);
+ const featured=products.find(p=>p.id==='faith-over-fear')||products[0];
  const active=products.filter(p=>p.active);
- const ranges=['Breeze','Faith',...[...new Set(active.map(p=>canonicalRange(p.range)))].filter(r=>r!=='Faith'&&r!=='Breeze')];
- const shown=selectedRange?active.filter(p=>canonicalRange(p.range)===selectedRange):active;
- const shop=(range:string)=>{setSelectedRange(range);document.getElementById('styles')?.scrollIntoView({behavior:'smooth'})};
+ const ranges=[...new Set(['Faith','Breeze',...active.map(p=>p.collection||'Faith')])];
+ const [range,setRange]=useState('All');
+ const shown=range==='All'?active:active.filter(p=>(p.collection||'Faith').toLowerCase()===range.toLowerCase());
  return <main className="shell editorial">
-  <header className="sox-nav">
-   <button type="button" aria-label="Open navigation" onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</button>
-   <Link href="/" className="sox-brand">FAITH <span>BY</span> SOX.</Link>
-   <Link href="/checkout" aria-label={`Shopping bag, ${count} items`} className="sox-bag"><ShoppingBag/><b>{count}</b></Link>
-  </header>
-  {menu&&<nav className="sox-menu"><a href="#ranges" onClick={()=>setMenu(false)}>OUR RANGES</a><a href="#styles" onClick={()=>setMenu(false)}>SHOP</a><a href="#purpose" onClick={()=>setMenu(false)}>OUR PURPOSE</a></nav>}
-  <section className="sox-hero"><p className="sox-eyebrow">MORE THAN CLOTHING</p><h1>A DECLARATION<br/>OF FAITH.</h1><div className="sox-stroke"/><p className="sox-tagline">WEAR WHAT YOU BELIEVE.</p><a className="sox-cta" href="#ranges">SHOP THE RANGES <ArrowRight/></a></section>
-  <section className="sox-ranges" id="ranges"><div className="sox-section-title"><span/><h2>OUR RANGES</h2><span/></div><div className="sox-range-grid">
-   {ranges.map(range=><button type="button" key={range} className={`sox-range-card ${range==='Faith'?'sox-range-faith':range==='Breeze'?'sox-range-breeze':'sox-range-other'}`} onClick={()=>shop(range)}><small>THE</small><strong>{range}</strong><small>RANGE</small><span className="sox-range-arrow"><ArrowRight size={18}/></span></button>)}
-   <div className="sox-range-future"><strong>MORE RANGES</strong><span>COMING SOON</span></div>
-  </div></section>
-  <section className="sox-styles" id="styles"><div className="sox-section-title"><span/><h2>{selectedRange?`${selectedRange.toUpperCase()} RANGE`:'FEATURED STYLES'}</h2><span/></div>{selectedRange&&<button type="button" className="sox-view-all" onClick={()=>setSelectedRange(null)}>VIEW ALL STYLES</button>}
-   {shown.length?<div className="catalog-grid">{shown.map(p=><Link className="catalog-card" key={p.id} href={'/product/'+p.id}><div className="catalog-photo"><img src={p.image||'/faith-cream.webp'} alt={p.name}/></div><div className="catalog-name"><b>{p.name}</b><span>R {p.price.toFixed(2)}</span></div><small>{canonicalRange(p.range).toUpperCase()} RANGE · {p.colors.length} COLOURS</small></Link>)}</div>:<p className="sox-coming">This range is coming soon. Watch this space.</p>}
-  </section>
-  <section className="editorial-benefits"><div><Truck/><span>DELIVERY<br/>DETAILS AT CHECKOUT</span></div><div><ShieldCheck/><span>SECURE<br/>CHECKOUT</span></div><div><ShoppingBag/><span>EASY<br/>GUEST CHECKOUT</span></div></section>
-  <section id="purpose" className="editorial-purpose"><p>FAITH-INSPIRED APPAREL</p><h2>FOR EVERYDAY LIFE.</h2><span className="underline-stroke"/></section>
-  <footer className="editorial-footer"><strong>FAITH <span>BY</span> SOX.</strong><p>WEAR WHAT YOU BELIEVE.</p><small>© 2026 FAITH BY SOX</small><p className="sox-test-warning">TEST STORE — NO REAL PAYMENTS ACCEPTED YET</p></footer>
+  <header className="original-header"><img src="/original-brand-header.webp" alt="FAITH BY SOX original brand logo"/><button className="original-menu" aria-label="Open menu" onClick={()=>setMenu(!menu)}></button><Link className="original-cart" href="/checkout" aria-label={`Shopping bag, ${count} items`}></Link>{menu&&<nav className="campaign-menu"><button onClick={()=>setMenu(false)} aria-label="Close menu"><X/></button><a href="#ranges" onClick={()=>setMenu(false)}>OUR RANGES</a><a href="#collection" onClick={()=>setMenu(false)}>SHOP SHIRTS</a><Link href="/admin">ADMIN</Link></nav>}</header>
+  <section className="restored-hero"><p>MORE THAN CLOTHING</p><h1>A DECLARATION<br/>OF FAITH.</h1><span className="underline-stroke light"/><p className="hero-subline">WEAR WHAT YOU BELIEVE.</p><a className="restored-cta" href="#ranges">SHOP THE RANGES <ArrowRight size={20}/></a></section>
+  <section id="ranges" className="restored-ranges"><div className="collection-title"><span/><h2>OUR RANGES</h2><span/></div><div className="range-grid">{ranges.map((name,i)=><button key={name} className={'range-tile '+(range===name?'selected':'')} onClick={()=>{setRange(name);document.getElementById('collection')?.scrollIntoView({behavior:'smooth'})}}><strong>{name.toUpperCase()}</strong><small>{name.toLowerCase()==='faith'?'FAITH RANGE':name.toLowerCase()==='breeze'?'BREEZE RANGE':'EXPLORE THE RANGE'}</small><ArrowRight size={20}/></button>)}</div></section>
+  <section id="collection" className="editorial-collection"><div className="collection-title"><span/><h2>FEATURED STYLES</h2><span/></div><p className="collection-kicker">FOR HIS GLORY · COLLECTION 001</p><div className="color-gallery">{images.map((img,i)=><Link key={img} href={'/product/'+(featured?.id||'faith-over-fear')} className="color-card"><img src={img} alt={`Faith Over Fear T-shirt in ${['black','white','cream','brown'][i]}`}/><div className="color-name">{['BLACK','WHITE','CREAM','BROWN'][i]}</div></Link>)}</div><div className="gallery-dots" aria-hidden="true"><b/><i/><i/><i/></div>
+  <div className="product-header"><span>EXPLORE THE COLLECTIONS</span><h2>FIND YOUR <em>STATEMENT.</em></h2></div><div className="range-filters"><button className={range==='All'?'active':''} onClick={()=>setRange('All')}>ALL</button>{ranges.map(n=><button key={n} className={range===n?'active':''} onClick={()=>setRange(n)}>{n.toUpperCase()}</button>)}</div><div className="catalog-grid">{shown.map(p=><Link className="catalog-card" key={p.id} href={'/product/'+p.id}><div className="catalog-photo"><img src={p.image||(p.id==='glory'?'/glory-back.webp':p.id==='forgiven'?'/forgiven-back.webp':'/faith-cream.webp')} alt={p.name}/></div><div className="catalog-name"><b>{p.name}</b><span>R {p.price.toFixed(2)}</span></div><small>{p.collection||'Faith'} · {p.colors.length} COLOURS</small></Link>)}</div>{shown.length===0&&<p className="range-empty">THIS RANGE IS COMING SOON.</p>}<Link className="collection-action" href="/checkout">YOUR BAG <ArrowRight size={18}/></Link></section>
+  <section className="editorial-benefits"><div><Truck/><span>NATIONWIDE<br/>DELIVERY</span></div><div><ShieldCheck/><span>YOCO TEST CHECKOUT<br/>NO REAL PAYMENTS</span></div><div><ShoppingBag/><span>GUEST<br/>CHECKOUT</span></div></section>
+  <section className="editorial-purpose"><p>FAITH. IDENTITY. PURPOSE.</p><h2>WORN BOLDLY.<br/>LIVED FULLY.</h2><span className="underline-stroke"/></section>
+  <footer className="editorial-footer"><strong>FAITH <span>BY</span> SOX.</strong><p>FOR HIS GLORY · COLLECTION 001</p><small>© 2026 FAITH BY SOX</small></footer><div className="editorial-bag"><Link href="/checkout">{count?`${count} ITEM(S) IN YOUR BAG · TEST CHECKOUT`:'YOUR BAG IS EMPTY · VIEW BAG'}</Link></div>
  </main>
 }
