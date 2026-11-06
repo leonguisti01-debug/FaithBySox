@@ -32,3 +32,33 @@
 .original-header{position:relative;line-height:0;background:#080808}.original-header>img{width:100%;display:block}.original-menu,.original-cart{position:absolute;top:0;height:100%;width:17%;border:0;background:transparent;z-index:2}.original-menu{left:0}.original-cart{right:0}.original-header .campaign-menu{line-height:1.5}
 .restored-hero{background:radial-gradient(ellipse at 15% 15%,#544338 0%,#1d1917 30%,#0b0a09 74%);color:#f9f2e8;text-align:center;padding:46px 14px 52px}.restored-hero>p:first-child{font-size:12px;letter-spacing:5px;margin:0 0 18px}.restored-hero h1{font:500 clamp(37px,9.5vw,54px)/1.04 'Playfair Display',Georgia,serif;margin:0;letter-spacing:-1.6px}.underline-stroke.light{background:#f5eee5;margin:20px auto}.restored-hero .hero-subline{font-size:10px;letter-spacing:3px;margin:24px 0 28px}.restored-cta{display:flex;align-items:center;justify-content:center;gap:18px;width:max-content;max-width:100%;margin:auto;background:#f5eee5;color:#151311;padding:17px 24px;border-radius:4px;font-weight:800;font-size:12px;letter-spacing:.6px}
 .restored-ranges{padding:34px 14px 25px;background:#f8f3ec}.restored-ranges .collection-title h2,.editorial-collection .collection-title h2{font:800 clamp(17px,5.3vw,26px) 'DM Sans',Arial,sans-serif;letter-spacing:4px;white-space:nowrap}.range-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:20px 0 8px}.range-tile{min-height:145px;background:linear-gradient(145deg,#2d2824,#100f0e);color:#fff;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:10px}.range-tile:nth-child(even){background:linear-gradient(145deg,#d9c6ac,#a98b71);color:#181411}.range-tile.selected{border-color:#9c8466}.range-tile strong{font:500 30px 'Playfair Display',Georgia,serif}.range-tile small{font-size:8px;letter-spacing:2px}.range-filters{display:flex;gap:7px;overflow:auto;margin:12px 0 22px}.range-filters button{flex-shrink:0;border:1px solid #a49b91;background:transparent;padding:10px 13px;font-size:10px;font-weight:800}.range-filters button.active{background:#171615;color:white}.range-empty{text-align:center;font-size:12px;letter-spacing:2px;padding:25px}
+
+/* Pixel-matched mobile homepage panels from the user's approved reference artwork.
+   Functional hit areas preserve menu, ranges, products and guest checkout. */
+.exact-mobile{max-width:941px;background:#f8f3ec;color:#101010}
+.approved-panel{position:relative;width:100%;line-height:0;overflow:hidden}
+.approved-panel>img{display:block;width:100%;height:auto}
+.approved-panel .hit{position:absolute;display:block;background:transparent;border:0;padding:0;z-index:2;cursor:pointer}
+.header-menu-hit{left:2%;top:6%;width:13%;height:88%}
+.header-bag-hit{right:2%;top:5%;width:14%;height:90%}
+.hero-cta-hit{left:28%;top:78%;width:44%;height:15%}
+.range-breeze-hit{left:2.5%;top:25%;width:33%;height:69%}
+.range-faith-hit{left:36.5%;top:25%;width:33%;height:69%}
+.featured-hit{top:19%;width:23%;height:68%}
+.exact-menu{position:absolute;inset:0;min-height:340px;background:#111;color:white;z-index:8;display:flex;flex-direction:column;gap:22px;padding:24px;font-weight:800;letter-spacing:2px;font-size:13px;line-height:1.5}
+.exact-menu button{align-self:flex-end;background:transparent;border:0;color:white}
+.exact-shop{background:#f8f3ec;padding:38px 22px 52px}
+.exact-kicker{text-align:center;font-size:11px;letter-spacing:4px;margin:0 0 10px}
+.exact-shop h2{text-align:center;letter-spacing:4px;font-size:clamp(21px,4vw,32px);margin:0 0 25px}
+.exact-filter{display:flex;overflow-x:auto;gap:9px;padding:0 0 18px}
+.exact-filter button{border:1px solid #a89e93;background:transparent;padding:11px 14px;white-space:nowrap;font-size:11px;font-weight:800}
+.exact-filter button.active{background:#171615;color:#fff}
+.exact-products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 13px}
+.exact-product img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:#e9e3da}
+.exact-product strong,.exact-product span{display:block;font-size:12px;margin-top:9px}
+.exact-product span{font-weight:400;margin-top:4px}
+.exact-empty{text-align:center;letter-spacing:2px;font-size:12px;padding:30px 0}
+.exact-new-ranges{padding-top:30px}.exact-new-ranges h3{font-size:16px;letter-spacing:3px}.exact-new-ranges button{border:1px solid #bfb5a8;background:transparent;padding:15px;margin:5px;display:inline-flex;align-items:center;gap:12px}
+.exact-footer{background:#101010;color:#f4efe8;text-align:center;padding:32px 18px;display:flex;flex-direction:column;gap:12px;align-items:center}
+.exact-footer strong{font-size:23px}.exact-footer strong span{font-weight:400}.exact-footer p{font-size:10px;letter-spacing:2px}.exact-footer a{border:1px solid #e7ddd0;padding:12px 20px;font-size:11px;font-weight:800}
+@media(min-width:942px){.exact-mobile{box-shadow:0 12px 80px #0008}}
