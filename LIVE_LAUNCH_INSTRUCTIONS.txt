@@ -1,18 +1,15 @@
-FAITH BY SOX — LIVE PAYMENT BUILD
+FAITH BY SOX LIVE CHECKOUT
 
-IMPORTANT: Do not accept real payments until the end-to-end payment and email checks succeed.
+Required Production environment variables:
+YOCO_LIVE_SECRET_KEY (sk_live_...)
+YOCO_LIVE_WEBHOOK_SECRET (whsec_...)
+SUPABASE_SERVICE_ROLE_KEY
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+RESEND_API_KEY for emails
 
-1. In Supabase SQL Editor run setup/06-live-payment-mode.sql (once).
-   The earlier setup/04-order-confirmation.sql and setup/05-admin-order-notification.sql must already have been applied for both emails.
-2. Vercel Production environment variables must include:
-   YOCO_LIVE_SECRET_KEY (sk_live_...)
-   YOCO_LIVE_WEBHOOK_SECRET (whsec_...)
-   YOCO_WEBHOOK_SECRET (existing test secret)
-   SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL, RESEND_API_KEY
-3. Deploy this ZIP once through your usual GitHub/Vercel process.
-4. Do one controlled real payment and confirm in Supabase orders: paid, payment_mode live, payment_reference ch_..., correct total. Check customer and admin emails.
-5. If anything fails, stop accepting payments and inspect Vercel logs.
+Supabase orders.payment_mode must exist (already added).
+For customer and admin emails, SQL functions from setup/04-order-confirmation.sql and setup/05-admin-order-notification.sql must exist.
 
-The website's page/style/public assets have not been changed.
-The test key remains configured but checkout now uses the live key.
-If a live signing secret was shown publicly, rotate it before launch.
+Deploy this ZIP as the complete website source. Confirm deployment and perform a controlled live transaction, verifying the paid order in Supabase and emails before opening publicly.
+Do not send payment credentials in chat. Rotate any secrets previously exposed in screenshots.

@@ -5,7 +5,6 @@ export function database(){
  if(!url||!key)throw new Error('Server database credentials are not configured');
  return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
 }
-export function testKey(){const key=process.env.YOCO_SECRET_KEY;if(!key?.startsWith('sk_test_'))throw new Error('Only Yoco TEST keys are permitted in this version');return key;}
 
 export function checkoutCredentials(){
  const live=process.env.YOCO_LIVE_SECRET_KEY;

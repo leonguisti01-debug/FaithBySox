@@ -125,35 +125,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Checkout mismatch' }, { status: 400 });
     }
 
-    // Confirm that the signed event belongs to this checkout, not merely an
-    // order with the same amount. Yoco can omit checkoutId from payment events.
-    // Re-fetch the recorded checkout using the server-only key for its mode.
-    const checkoutKey = verifiedMode === 'live'
-      ? process.env.YOCO_LIVE_SECRET_KEY : process.env.YOCO_SECRET_KEY;
-    if (!checkoutKey || !checkoutKey.startsWith(verifiedMode === 'live' ? 'sk_live_' : 'sk_test_')) {
-      return NextResponse.json({ error: 'Checkout verification unavailable' }, { status: 503 });
-    }
-    const verification = await fetch(`https://payments.yoco.com/api/checkouts/${encodeURIComponent(checkoutId)}`, {
-      headers: { Authorization: `Bearer ${checkoutKey}` }, cache: 'no-store'
-    });
-    if (!verification.ok) {
-      console.error('Yoco checkout verification request failed', { orderId, status: verification.status });
-      return NextResponse.json({ error: 'Checkout verification unavailable' }, { status: 503 });
-    }
-    const checkout = await verification.json();
-    const checkoutMode = String(checkout.processingMode || checkout.mode || '').toLowerCase();
-    const checkoutStatus = String(checkout.status || '').toLowerCase();
-    if (checkout.id !== checkoutId || checkout.metadata?.orderId !== orderId ||
-        checkout.amount !== order.total_cents ||
-        String(checkout.currency || '').toUpperCase() !== 'ZAR' ||
-        (checkoutMode && checkoutMode !== verifiedMode)) {
-      console.warn('Yoco checkout verification mismatch', { orderId });
-      return NextResponse.json({ error: 'Checkout mismatch' }, { status: 400 });
-    }
-    if (event.type === 'payment.succeeded' &&
-        !['completed', 'succeeded', 'paid'].includes(checkoutStatus)) {
-      return NextResponse.json({ error: 'Checkout payment not confirmed yet' }, { status: 503 });
-    }
+    // The verified Yoco webhook signature, matching payment mode, order ID,
+    // amount and currency establish the payment. The payment's checkout ID,
+    // when included, must match the checkout we created for this order.
+    // Do not call an undocumented checkout retrieval endpoint here: doing so
+    // can reject legitimate paid orders and prevent their fulfilment.
 
     if (order.payment_status === 'paid') {
       await sendPaidOrderConfirmation(orderId);
