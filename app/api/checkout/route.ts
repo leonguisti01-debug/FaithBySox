@@ -26,13 +26,18 @@ export async function POST(request:Request){
    if(!variant)return NextResponse.json({error:`Variant unavailable for ${product.name} (${item.colour}, ${item.size}).`},{status:409});
    prepared.push({variant_id:variant.id,product_name:product.name,colour:item.colour,size:item.size,quantity:item.qty,unit_price_cents:product.price_cents});
   }
+  const coupon=String(input.coupon||'').trim().toUpperCase();
+  if(coupon && coupon!=='SOXMAS26')return NextResponse.json({error:'Invalid coupon code.'},{status:400});
+  const shirtCount=prepared.reduce((s,x)=>s+x.quantity,0);
+  if(coupon && shirtCount<2)return NextResponse.json({error:'SOXMAS26 requires at least two shirts.'},{status:400});
   const subtotal=prepared.reduce((s,x)=>s+x.unit_price_cents*x.quantity,0);
   if(!Number.isSafeInteger(subtotal)||subtotal<200)return NextResponse.json({error:'Invalid order amount.'},{status:400});
   // Flat nationwide delivery: R120, stored and charged in cents.
   const shipping=12000;
-  const total=subtotal+shipping;
+  const discount=coupon==='SOXMAS26'?Math.round(subtotal*15/100):0;
+  const total=subtotal-discount+shipping;
   const orderId=crypto.randomUUID();
-  const {error:orderError}=await db.from('orders').insert({id:orderId,customer_name:name,customer_email:email,customer_phone:phone,delivery_address:{address},subtotal_cents:subtotal,shipping_cents:shipping,total_cents:total,payment_status:'pending',fulfilment_status:'unfulfilled',payment_reference:null,payment_mode:mode});
+  const {error:orderError}=await db.from('orders').insert({id:orderId,customer_name:name,customer_email:email,customer_phone:phone,delivery_address:{address},subtotal_cents:subtotal,discount_cents:discount,coupon_code:coupon||null,shipping_cents:shipping,total_cents:total,payment_status:'pending',fulfilment_status:'unfulfilled',payment_reference:null,payment_mode:mode});
   if(orderError)throw orderError;
   const {error:itemsError}=await db.from('order_items').insert(prepared.map(x=>({...x,order_id:orderId})));
   if(itemsError){await db.from('orders').delete().eq('id',orderId);throw itemsError;}
