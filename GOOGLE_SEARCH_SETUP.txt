@@ -1,0 +1,9 @@
+FAITH BY SOX — GOOGLE SEARCH SETUP
+1. Deploy this ZIP via your existing GitHub/Vercel workflow.
+2. Open https://faithbysox.co.za/robots.txt and https://faithbysox.co.za/sitemap.xml to confirm they load.
+3. Go to https://search.google.com/search-console and add the domain property faithbysox.co.za.
+4. Verify domain ownership using the DNS TXT record Google gives you (at your domain/DNS provider).
+5. Submit sitemap.xml under Sitemaps, then request indexing for https://faithbysox.co.za/ in URL Inspection.
+6. Google indexing and rankings are not immediate or guaranteed. Organic rankings cannot be bought; Google Ads are a separate paid option.
+7. Product pages are not included in this initial sitemap because product IDs come from Supabase. Add dynamic product URLs once a safe public catalogue feed is implemented.
+8. Do not publish secret API keys or Yoco live credentials to GitHub.
