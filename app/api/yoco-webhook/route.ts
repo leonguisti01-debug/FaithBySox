@@ -14,16 +14,18 @@ function verifySignature(
   id: string,
   timestamp: string,
   header: string
-): PaymentMode | null {
+): PaymentMode[] {
   const secrets: Array<[PaymentMode, string | undefined]> = [
-    ['test', process.env.YOCO_WEBHOOK_SECRET],
-    ['live', process.env.YOCO_LIVE_WEBHOOK_SECRET]
+    ['live', process.env.YOCO_LIVE_WEBHOOK_SECRET],
+    ['test', process.env.YOCO_WEBHOOK_SECRET]
   ];
 
   const signatures = header
     .split(/\s+/)
     .filter(s => /^v1,[A-Za-z0-9+/_=-]+$/.test(s))
     .map(s => Buffer.from(s.substring(3), 'base64'));
+
+  const matchedModes: PaymentMode[] = [];
 
   for (const [mode, secret] of secrets) {
     if (!secret?.trim().startsWith('whsec_')) continue;
@@ -35,17 +37,17 @@ function verifySignature(
       .update(`${id}.${timestamp}.${raw}`, 'utf8')
       .digest();
 
-    for (const signature of signatures) {
-      if (
+    if (
+      signatures.some(signature =>
         signature.length === expected.length &&
         timingSafeEqual(signature, expected)
-      ) {
-        return mode;
-      }
+      )
+    ) {
+      matchedModes.push(mode);
     }
   }
 
-  return null;
+  return matchedModes;
 }
 
 async function sendEmails(orderId: string) {
@@ -82,9 +84,14 @@ export async function POST(request: Request) {
     }
 
     const raw = await request.text();
-    const mode = verifySignature(raw, id, timestamp, signature);
+    const matchedModes = verifySignature(
+      raw,
+      id,
+      timestamp,
+      signature
+    );
 
-    if (!mode) {
+    if (!matchedModes.length) {
       console.warn('Yoco signature verification failed');
       return NextResponse.json(
         { error: 'Invalid signature' },
@@ -123,7 +130,7 @@ export async function POST(request: Request) {
       null;
 
     const validOrderId =
-      orderId &&
+      typeof orderId === 'string' &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
         .test(orderId);
 
@@ -189,6 +196,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const mode = order.payment_mode as PaymentMode;
+
+    if (
+      (mode !== 'live' && mode !== 'test') ||
+      !matchedModes.includes(mode)
+    ) {
+      console.warn('Yoco webhook mode mismatch', {
+        orderId: order.id,
+        orderMode: mode,
+        matchedModes
+      });
+
+      return NextResponse.json(
+        { error: 'Webhook mode mismatch' },
+        { status: 400 }
+      );
+    }
+
     const eventMode = String(
       payload.mode || payload.processingMode || ''
     ).toLowerCase();
@@ -202,12 +227,18 @@ export async function POST(request: Request) {
 
     const validStatus =
       !status ||
-      ['succeeded', 'successful', 'success',
-       'approved', 'completed', 'paid'].includes(status);
+      [
+        'succeeded',
+        'successful',
+        'success',
+        'approved',
+        'completed',
+        'paid'
+      ].includes(status);
 
     const checks = {
-      mode: order.payment_mode === mode,
-      eventMode: !normalizedMode || normalizedMode === mode,
+      eventMode:
+        !normalizedMode || normalizedMode === mode,
       amount:
         Number.isSafeInteger(payload.amount) &&
         payload.amount === order.total_cents,
@@ -228,6 +259,8 @@ export async function POST(request: Request) {
       );
     }
 
+    let newlyPaid = false;
+
     if (order.payment_status !== 'paid') {
       const { data: updated, error: updateError } = await db
         .from('orders')
@@ -240,7 +273,9 @@ export async function POST(request: Request) {
 
       if (updateError) throw updateError;
 
-      if (!updated?.length) {
+      newlyPaid = Boolean(updated?.length);
+
+      if (!newlyPaid) {
         const { data: current, error: readError } = await db
           .from('orders')
           .select('payment_status')
@@ -263,7 +298,9 @@ export async function POST(request: Request) {
       mode
     });
 
-    await sendEmails(order.id);
+    if (newlyPaid) {
+      await sendEmails(order.id);
+    }
 
     return NextResponse.json({ ok: true });
 
