@@ -47,9 +47,12 @@ export async function POST(request: Request) {
     const body = await request.json();
     const orderId = body?.orderId || body?.id;
 
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     if (
       typeof orderId !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
+      !uuidPattern.test(orderId)
     ) {
       return NextResponse.json(
         { error: 'Invalid order ID' },
