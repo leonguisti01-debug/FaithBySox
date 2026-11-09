@@ -13,38 +13,56 @@ function verifySignature(
   timestamp: string,
   signatureHeader: string
 ): PaymentMode | null {
-  const secrets: { mode: PaymentMode; value: string | undefined }[] = [
-    { mode: 'test', value: process.env.YOCO_WEBHOOK_SECRET },
-    { mode: 'live', value: process.env.YOCO_LIVE_WEBHOOK_SECRET }
+  const secrets: {
+    mode: PaymentMode;
+    value: string | undefined;
+  }[] = [
+    {
+      mode: 'test',
+      value: process.env.YOCO_WEBHOOK_SECRET
+    },
+    {
+      mode: 'live',
+      value: process.env.YOCO_LIVE_WEBHOOK_SECRET
+    }
   ];
 
-  const signatures = signatureHeader
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((entry) => {
-      const match = /^v1,([A-Za-z0-9+/]+={0,2})$/.exec(entry);
-      return match ? Buffer.from(match[1], 'base64') : null;
-    })
-    .filter((entry): entry is Buffer => entry !== null);
+  const signatures: Uint8Array[] = [];
+
+  for (const entry of signatureHeader.split(/\s+/)) {
+    const match = /^v1,([A-Za-z0-9+/_=-]+)$/.exec(entry);
+
+    if (match) {
+      signatures.push(
+        Buffer.from(match[1], 'base64url')
+      );
+    }
+  }
 
   for (const secret of secrets) {
     const value = secret.value?.trim();
 
-    if (!value?.startsWith('whsec_')) continue;
+    if (!value?.startsWith('whsec_')) {
+      continue;
+    }
 
-    const key = Buffer.from(value.slice(6), 'base64');
+    const key = Buffer.from(
+      value.substring(6),
+      'base64'
+    );
 
     const expected = createHmac('sha256', key)
       .update(`${id}.${timestamp}.${raw}`, 'utf8')
       .digest();
 
-    const valid = signatures.some(
-      (candidate) =>
+    for (const candidate of signatures) {
+      if (
         candidate.length === expected.length &&
         timingSafeEqual(candidate, expected)
-    );
-
-    if (valid) return secret.mode;
+      ) {
+        return secret.mode;
+      }
+    }
   }
 
   return null;
@@ -52,9 +70,14 @@ function verifySignature(
 
 export async function POST(request: Request) {
   try {
-    const id = request.headers.get('webhook-id') || '';
-    const timestamp = request.headers.get('webhook-timestamp') || '';
-    const signature = request.headers.get('webhook-signature') || '';
+    const id =
+      request.headers.get('webhook-id') || '';
+
+    const timestamp =
+      request.headers.get('webhook-timestamp') || '';
+
+    const signature =
+      request.headers.get('webhook-signature') || '';
 
     const ts = Number(timestamp);
 
@@ -80,13 +103,22 @@ export async function POST(request: Request) {
     );
 
     if (!verifiedMode) {
-      console.warn('Yoco webhook signature invalid', {
-        testSecretConfigured:
-          Boolean(process.env.YOCO_WEBHOOK_SECRET?.trim().startsWith('whsec_')),
-        liveSecretConfigured:
-          Boolean(process.env.YOCO_LIVE_WEBHOOK_SECRET?.trim().startsWith('whsec_')),
-        signaturePresent: Boolean(signature)
-      });
+      console.warn(
+        'Yoco webhook signature invalid',
+        {
+          testSecretConfigured: Boolean(
+            process.env.YOCO_WEBHOOK_SECRET
+              ?.trim()
+              .startsWith('whsec_')
+          ),
+          liveSecretConfigured: Boolean(
+            process.env.YOCO_LIVE_WEBHOOK_SECRET
+              ?.trim()
+              .startsWith('whsec_')
+          ),
+          signaturePresent: Boolean(signature)
+        }
+      );
 
       return NextResponse.json(
         { error: 'Invalid webhook signature' },
@@ -114,7 +146,9 @@ export async function POST(request: Request) {
 
     if (
       typeof orderId !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        orderId
+      )
     ) {
       return NextResponse.json(
         { error: 'Invalid order ID' },
@@ -132,7 +166,9 @@ export async function POST(request: Request) {
       .eq('id', orderId)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     if (!order) {
       return NextResponse.json(
@@ -142,7 +178,9 @@ export async function POST(request: Request) {
     }
 
     const eventMode = String(
-      payload.mode || payload.processingMode || ''
+      payload.mode ||
+      payload.processingMode ||
+      ''
     ).toLowerCase();
 
     const normalizedMode =
@@ -172,26 +210,36 @@ export async function POST(request: Request) {
         order.payment_mode === verifiedMode,
 
       eventModeMatchesSignature:
-        !normalizedMode || normalizedMode === verifiedMode,
+        !normalizedMode ||
+        normalizedMode === verifiedMode,
 
       amountMatches:
         Number.isSafeInteger(payload.amount) &&
         payload.amount === order.total_cents,
 
       currencyMatches:
-        String(payload.currency || '').toUpperCase() === 'ZAR',
+        String(
+          payload.currency || ''
+        ).toUpperCase() === 'ZAR',
 
       statusMatches: validStatus
     };
 
-    if (Object.values(checks).some((valid) => !valid)) {
-      console.warn('Yoco payment verification mismatch', {
-        orderId,
-        checks,
-        verifiedMode,
-        orderMode: order.payment_mode,
-        eventMode: normalizedMode
-      });
+    if (
+      Object.values(checks).some(
+        (valid) => !valid
+      )
+    ) {
+      console.warn(
+        'Yoco payment verification mismatch',
+        {
+          orderId,
+          checks,
+          verifiedMode,
+          orderMode: order.payment_mode,
+          eventMode: normalizedMode
+        }
+      );
 
       return NextResponse.json(
         { error: 'Payment verification mismatch' },
@@ -233,12 +281,16 @@ export async function POST(request: Request) {
 
     const { error: updateError } = await db
       .from('orders')
-      .update({ payment_status: 'paid' })
+      .update({
+        payment_status: 'paid'
+      })
       .eq('id', orderId)
       .eq('payment_mode', verifiedMode)
       .neq('payment_status', 'paid');
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      throw updateError;
+    }
 
     console.info('Yoco payment confirmed', {
       orderId,
@@ -248,7 +300,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Yoco webhook processing error', error);
+    console.error(
+      'Yoco webhook processing error',
+      error
+    );
 
     return NextResponse.json(
       { error: 'Webhook processing failed' },
