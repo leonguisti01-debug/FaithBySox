@@ -26,7 +26,8 @@ async function verifyAdmin(request: Request): Promise<boolean> {
     }
   });
 
-  const { data: { user }, error } = await client.auth.getUser(token);
+  const { data: { user }, error } =
+    await client.auth.getUser(token);
 
   if (error || !user) return false;
 
@@ -46,12 +47,17 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const orderId = body?.orderId;
+
+    // Accept both orderId and id from the admin panel.
+    const orderId = body?.orderId || body?.id;
     const recipient = body?.recipient;
+
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
     if (
       typeof orderId !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
+      !uuidPattern.test(orderId)
     ) {
       return NextResponse.json(
         { error: 'Invalid order ID' },
@@ -220,7 +226,8 @@ export async function POST(request: Request) {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'Idempotency-Key': `faithbysox-manual-${recipient}-${order.id}-${crypto.randomUUID()}`
+        'Idempotency-Key':
+          `faithbysox-manual-${recipient}-${order.id}-${crypto.randomUUID()}`
       },
       body: JSON.stringify({
         from: 'FAITH BY SOX <orders@faithbysox.co.za>',
@@ -234,7 +241,12 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-      console.error('Resend email failed', response.status, await response.text());
+      console.error(
+        'Resend email failed',
+        response.status,
+        await response.text()
+      );
+
       return NextResponse.json(
         { error: 'Email provider rejected the request' },
         { status: 502 }
@@ -255,4 +267,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
