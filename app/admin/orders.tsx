@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -40,6 +41,7 @@ export default function AdminOrders() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [sending, setSending] = useState('');
+  const [verifying, setVerifying] = useState('');
 
   async function request(
     method: 'GET' | 'PATCH' | 'POST',
@@ -66,7 +68,7 @@ export default function AdminOrders() {
     const result = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      throw Error(result.error || 'Request failed');
+      throw Error(result.error || result.message || 'Request failed');
     }
 
     return result;
@@ -101,12 +103,47 @@ export default function AdminOrders() {
     }
   }
 
+  async function verifyPayment(order: Order) {
+    if (order.payment_status === 'paid') return;
+
+    setVerifying(order.id);
+    setError('');
+    setMessage('');
+
+    try {
+      const result = await request(
+        'POST',
+        { orderId: order.id },
+        '/api/admin/verify-payment'
+      );
+
+      if (result.paid === true) {
+        await refresh();
+        setMessage(
+          `Order #${order.id.slice(0, 8).toUpperCase()}: ` +
+          'Payment verified. Email controls are now unlocked.'
+        );
+      } else {
+        setError(
+          result.message ||
+          'Yoco has not confirmed this payment.'
+        );
+      }
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setVerifying('');
+    }
+  }
+
   async function resend(
     order: Order,
     recipient: 'customer' | 'admin'
   ) {
     if (order.payment_status !== 'paid') {
-      setError('Payment must be verified before sending a paid confirmation.');
+      setError(
+        'Payment must be verified before sending a paid confirmation.'
+      );
       return;
     }
 
@@ -148,7 +185,7 @@ export default function AdminOrders() {
 
       <button
         className="cta full"
-        disabled={busy}
+        disabled={busy || !!verifying || !!sending}
         onClick={refresh}
       >
         {busy ? 'REFRESHING…' : 'REFRESH ORDERS'}
@@ -180,8 +217,37 @@ export default function AdminOrders() {
           </p>
 
           <p>
-            <strong>PAYMENT: {o.payment_status.toUpperCase()}</strong>
+            <strong>
+              PAYMENT: {o.payment_status.toUpperCase()}
+            </strong>
           </p>
+
+          {o.payment_status !== 'paid' && (
+            <div style={{
+              padding: 16,
+              background: '#e8e1d7',
+              marginTop: 14,
+              marginBottom: 18
+            }}>
+              <strong>PAYMENT VERIFICATION</strong>
+
+              <p style={{ fontSize: 13 }}>
+                Check this order directly with Yoco.
+                The order will only be marked paid if
+                Yoco confirms the payment.
+              </p>
+
+              <button
+                className="cta full"
+                disabled={busy || !!verifying || !!sending}
+                onClick={() => verifyPayment(o)}
+              >
+                {verifying === o.id
+                  ? 'VERIFYING WITH YOCO…'
+                  : 'VERIFY PAYMENT WITH YOCO'}
+              </button>
+            </div>
+          )}
 
           <p>
             <strong>Customer:</strong> {o.customer_name}
@@ -226,7 +292,9 @@ export default function AdminOrders() {
             <button
               className="cta full"
               disabled={
+                busy ||
                 !!sending ||
+                !!verifying ||
                 o.payment_status !== 'paid'
               }
               onClick={() => resend(o, 'customer')}
@@ -240,7 +308,9 @@ export default function AdminOrders() {
             <button
               className="cta full"
               disabled={
+                busy ||
                 !!sending ||
+                !!verifying ||
                 o.payment_status !== 'paid'
               }
               onClick={() => resend(o, 'admin')}
@@ -261,7 +331,12 @@ export default function AdminOrders() {
             PRODUCTION STATUS
             <select
               value={o.fulfilment_status || 'unfulfilled'}
-              disabled={busy || o.payment_status !== 'paid'}
+              disabled={
+                busy ||
+                !!sending ||
+                !!verifying ||
+                o.payment_status !== 'paid'
+              }
               onChange={e => change(o.id, e.target.value)}
             >
               {statuses.map(s => (
