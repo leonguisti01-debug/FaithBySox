@@ -15,11 +15,18 @@ async function verifyAdmin(request: Request): Promise<boolean> {
   if (!token || !url || !key) return false;
 
   const client = createClient(url, key, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
+    global: {
+      headers: { Authorization: `Bearer ${token}` }
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
   });
 
-  const { data: { user }, error } = await client.auth.getUser(token);
+  const { data: { user }, error } =
+    await client.auth.getUser(token);
+
   if (error || !user) return false;
 
   const { data: allowed, error: rpcError } =
@@ -42,7 +49,7 @@ export async function POST(request: Request) {
 
     if (
       typeof orderId !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
     ) {
       return NextResponse.json(
         { error: 'Invalid order ID' },
@@ -74,13 +81,14 @@ export async function POST(request: Request) {
     }
 
     const checkoutId =
+      order.payment_reference ||
       order.yoco_checkout_id ||
       order.checkout_id ||
       order.payment_checkout_id;
 
     if (
       typeof checkoutId !== 'string' ||
-      !/^[a-zA-Z0-9_-]{3,150}$/.test(checkoutId)
+      !/^ch_[a-zA-Z0-9_-]+$/.test(checkoutId)
     ) {
       return NextResponse.json(
         { error: 'This order has no valid Yoco checkout ID.' },
@@ -89,23 +97,26 @@ export async function POST(request: Request) {
     }
 
     const storedMode = String(
-      order.yoco_mode || order.payment_mode || order.mode || 'live'
+      order.payment_mode ||
+      order.yoco_mode ||
+      order.mode ||
+      ''
     ).toLowerCase();
 
     if (!['live', 'test'].includes(storedMode)) {
       return NextResponse.json(
-        { error: 'Unknown payment mode' },
+        { error: 'Unknown payment mode.' },
         { status: 409 }
       );
     }
 
     const secretKey = storedMode === 'live'
       ? process.env.YOCO_LIVE_SECRET_KEY
-      : process.env.YOCO_TEST_SECRET_KEY;
+      : process.env.YOCO_SECRET_KEY;
 
     if (!secretKey) {
       return NextResponse.json(
-        { error: `Yoco ${storedMode} secret key is not configured` },
+        { error: `Yoco ${storedMode} secret key is not configured.` },
         { status: 500 }
       );
     }
@@ -130,7 +141,10 @@ export async function POST(request: Request) {
       });
 
       return NextResponse.json(
-        { error: `Yoco could not verify this checkout (${response.status}).` },
+        {
+          error:
+            `Yoco could not verify this checkout (${response.status}).`
+        },
         { status: 502 }
       );
     }
@@ -176,14 +190,16 @@ export async function POST(request: Request) {
         status,
         paymentStatus,
         amountMatches: checkout.amount === order.total_cents,
-        currencyMatches: checkout.currency === 'ZAR',
+        currencyMatches:
+          String(checkout.currency || '').toUpperCase() === 'ZAR',
         orderMatches: checkout.metadata?.orderId === order.id
       });
 
       return NextResponse.json(
         {
           paid: false,
-          message: 'Yoco has not confirmed a matching successful payment. Order remains pending.'
+          message:
+            'Yoco has not confirmed a matching successful payment. Order remains pending.'
         },
         { status: 409 }
       );
@@ -230,9 +246,8 @@ export async function POST(request: Request) {
     console.error('Manual Yoco verification failed', error);
 
     return NextResponse.json(
-      { error: 'Could not verify payment with Yoco' },
+      { error: 'Could not verify payment with Yoco.' },
       { status: 500 }
     );
   }
 }
-
