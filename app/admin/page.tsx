@@ -6,7 +6,7 @@ import type {User} from '@supabase/supabase-js';
 import {supabase} from '../../lib/supabase';
 import {Product,loadProducts} from '../../lib/store';
 import AdminOrders from './orders';
-const empty=():Product=>({id:'new-'+Date.now(),name:'NEW DESIGN',verse:'',price:395,description:'',colors:['Black','White','Cream','Brown'],sizes:['S','M','L','XL','2XL'],stock:{},image:'',active:false,collection:'Faith'});
+const empty=():Product=>({id:'new-'+Date.now(),name:'NEW DESIGN',verse:'',price:395,description:'',colors:['Black','White','Cream','Brown'],sizes:['S','M','L','XL','2XL','3XL'],stock:{},image:'',active:false,collection:'Faith'});
 export default function Admin(){
  const [user,setUser]=useState<User|null>(null),[ready,setReady]=useState(false),[allowed,setAllowed]=useState(false);
  const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[items,setItems]=useState<Product[]>([]),[selected,setSelected]=useState(0),[saved,setSaved]=useState(''),[busy,setBusy]=useState(false),[upload,setUpload]=useState<File|null>(null);
