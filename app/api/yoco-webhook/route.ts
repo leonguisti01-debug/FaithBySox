@@ -2,6 +2,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { database } from '../../../lib/server';
+import { sendPaidOrderConfirmation } from '../../../lib/order-email';
+import { sendAdminOrderNotification } from '../../../lib/admin-order-email';
 
 export const runtime = 'nodejs';
 
@@ -33,9 +35,7 @@ function verifySignature(
     const match = /^v1,([A-Za-z0-9+/_=-]+)$/.exec(entry);
 
     if (match) {
-      signatures.push(
-        Buffer.from(match[1], 'base64url')
-      );
+      signatures.push(Buffer.from(match[1], 'base64url'));
     }
   }
 
@@ -46,10 +46,7 @@ function verifySignature(
       continue;
     }
 
-    const key = Buffer.from(
-      value.substring(6),
-      'base64'
-    );
+    const key = Buffer.from(value.substring(6), 'base64');
 
     const expected = createHmac('sha256', key)
       .update(`${id}.${timestamp}.${raw}`, 'utf8')
@@ -68,16 +65,29 @@ function verifySignature(
   return null;
 }
 
+async function sendOrderEmails(orderId: string): Promise<void> {
+  const results = await Promise.allSettled([
+    sendPaidOrderConfirmation(orderId),
+    sendAdminOrderNotification(orderId)
+  ]);
+
+  for (const [index, result] of results.entries()) {
+    if (result.status === 'rejected') {
+      console.error(
+        index === 0
+          ? 'Customer email invocation failed'
+          : 'Admin email invocation failed',
+        { orderId, error: result.reason }
+      );
+    }
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    const id =
-      request.headers.get('webhook-id') || '';
-
-    const timestamp =
-      request.headers.get('webhook-timestamp') || '';
-
-    const signature =
-      request.headers.get('webhook-signature') || '';
+    const id = request.headers.get('webhook-id') || '';
+    const timestamp = request.headers.get('webhook-timestamp') || '';
+    const signature = request.headers.get('webhook-signature') || '';
 
     const ts = Number(timestamp);
 
@@ -103,22 +113,19 @@ export async function POST(request: Request) {
     );
 
     if (!verifiedMode) {
-      console.warn(
-        'Yoco webhook signature invalid',
-        {
-          testSecretConfigured: Boolean(
-            process.env.YOCO_WEBHOOK_SECRET
-              ?.trim()
-              .startsWith('whsec_')
-          ),
-          liveSecretConfigured: Boolean(
-            process.env.YOCO_LIVE_WEBHOOK_SECRET
-              ?.trim()
-              .startsWith('whsec_')
-          ),
-          signaturePresent: Boolean(signature)
-        }
-      );
+      console.warn('Yoco webhook signature invalid', {
+        testSecretConfigured: Boolean(
+          process.env.YOCO_WEBHOOK_SECRET
+            ?.trim()
+            .startsWith('whsec_')
+        ),
+        liveSecretConfigured: Boolean(
+          process.env.YOCO_LIVE_WEBHOOK_SECRET
+            ?.trim()
+            .startsWith('whsec_')
+        ),
+        signaturePresent: Boolean(signature)
+      });
 
       return NextResponse.json(
         { error: 'Invalid webhook signature' },
@@ -146,9 +153,7 @@ export async function POST(request: Request) {
 
     if (
       typeof orderId !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        orderId
-      )
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId)
     ) {
       return NextResponse.json(
         { error: 'Invalid order ID' },
@@ -166,9 +171,7 @@ export async function POST(request: Request) {
       .eq('id', orderId)
       .maybeSingle();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     if (!order) {
       return NextResponse.json(
@@ -178,9 +181,7 @@ export async function POST(request: Request) {
     }
 
     const eventMode = String(
-      payload.mode ||
-      payload.processingMode ||
-      ''
+      payload.mode || payload.processingMode || ''
     ).toLowerCase();
 
     const normalizedMode =
@@ -218,28 +219,19 @@ export async function POST(request: Request) {
         payload.amount === order.total_cents,
 
       currencyMatches:
-        String(
-          payload.currency || ''
-        ).toUpperCase() === 'ZAR',
+        String(payload.currency || '').toUpperCase() === 'ZAR',
 
       statusMatches: validStatus
     };
 
-    if (
-      Object.values(checks).some(
-        (valid) => !valid
-      )
-    ) {
-      console.warn(
-        'Yoco payment verification mismatch',
-        {
-          orderId,
-          checks,
-          verifiedMode,
-          orderMode: order.payment_mode,
-          eventMode: normalizedMode
-        }
-      );
+    if (Object.values(checks).some(valid => !valid)) {
+      console.warn('Yoco payment verification mismatch', {
+        orderId,
+        checks,
+        verifiedMode,
+        orderMode: order.payment_mode,
+        eventMode: normalizedMode
+      });
 
       return NextResponse.json(
         { error: 'Payment verification mismatch' },
@@ -275,35 +267,30 @@ export async function POST(request: Request) {
       );
     }
 
-    if (order.payment_status === 'paid') {
-      return NextResponse.json({ ok: true });
+    if (order.payment_status !== 'paid') {
+      const { error: updateError } = await db
+        .from('orders')
+        .update({ payment_status: 'paid' })
+        .eq('id', orderId)
+        .eq('payment_mode', verifiedMode)
+        .neq('payment_status', 'paid');
+
+      if (updateError) throw updateError;
+
+      console.info('Yoco payment confirmed', {
+        orderId,
+        mode: verifiedMode,
+        status: 'paid'
+      });
     }
 
-    const { error: updateError } = await db
-      .from('orders')
-      .update({
-        payment_status: 'paid'
-      })
-      .eq('id', orderId)
-      .eq('payment_mode', verifiedMode)
-      .neq('payment_status', 'paid');
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    console.info('Yoco payment confirmed', {
-      orderId,
-      mode: verifiedMode,
-      status: 'paid'
-    });
+    // Email helpers independently claim each notification.
+    // Already-paid orders can retry unsent notifications.
+    await sendOrderEmails(orderId);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error(
-      'Yoco webhook processing error',
-      error
-    );
+    console.error('Yoco webhook processing error', error);
 
     return NextResponse.json(
       { error: 'Webhook processing failed' },
