@@ -1,8 +1,10 @@
 import {NextResponse} from 'next/server';
 import {database,checkoutCredentials} from '../../../lib/server';
+import {storeIsOffline} from '../../../lib/store-mode';
 export const runtime='nodejs';
 export async function POST(request:Request){
  try{
+  if(await storeIsOffline())return NextResponse.json({error:'Our store is temporarily offline for updates. Please check back soon.'},{status:503});
   const input=await request.json();
   const name=String(input.name||'').trim().slice(0,120);
   const email=String(input.email||'').trim().slice(0,254);
